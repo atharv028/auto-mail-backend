@@ -11,6 +11,8 @@ const file_path = path.join(appDir + "/jobs", "schedule_emails.js");
 
 // const storage = require("node-persist");
 
+const port = process.env.PORT || 4000;
+
 const CyclicDb = require("@cyclic.sh/dynamodb");
 const db = CyclicDb("bored-dog-wrapCyclicDB");
 
@@ -28,11 +30,7 @@ const bree = new Bree({
   logger: new Cabin(),
   root: false,
   jobs: [],
-  errorHandler: (error, workerMetaData) => {
-    console.log(error);
-  },
   workerMessageHandler: handler,
-  outputWorkerMetadata: true,
 });
 
 var jobNum = 0;
@@ -40,7 +38,7 @@ var jobNum = 0;
 app.use(bodyparser.urlencoded({ extended: false }));
 app.use(bodyparser.json());
 
-app.listen(4000, () => console.log("Listening to port 4000"));
+app.listen(port, () => console.log(`Listening to port ${port}`));
 
 app.get("/", (req, res) => {
   bree.start();
