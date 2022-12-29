@@ -12,12 +12,21 @@ const appDir = path.resolve(__dirname);
 const file_path = path.join(appDir + "/jobs", "schedule_emails.js");
 const storage = require("node-persist");
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 65535;
 
 // const CyclicDb = require("@cyclic.sh/dynamodb");
 // const db = CyclicDb("bored-dog-wrapCyclicDB");
 
 // const storage = db.collection("emails");
+
+const { MongoClient, ServerApiVersion } = require("mongodb");
+const uri =
+  "mongodb+srv://atharv_tare:TcRKC70mKHZ9d0ZX@clusterautomails.2au0kx5.mongodb.net/?retryWrites=true&w=majority";
+const client = new MongoClient(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverApi: ServerApiVersion.v1,
+});
 
 const handler = (msg) => {
   if (msg.message === "stop") {
@@ -57,7 +66,7 @@ const scheduleMailFun = async ({
   await bree.add({
     name: jobId,
     path: file_path,
-    interval: `at ${timeStart}`,
+    interval: `every ${timeStart}`,
     worker: {
       workerData: {
         bodyHtml: bodyHtml,
@@ -71,7 +80,14 @@ const scheduleMailFun = async ({
       },
     },
   });
-  await storage.setItem(senderMail, {
+  // await storage.setItem(senderMail, {
+  // jobId: jobId,
+  // currIndex: 0,
+  // completedList: [],
+  // totalList: emails,
+  // });
+
+  await client.db("emails").collection(senderMail).insertOne({
     jobId: jobId,
     currIndex: 0,
     completedList: [],
@@ -113,9 +129,9 @@ app.post("/scheduleEmail", async (req, res) => {
 
 app.get("/getJobs", async (req, res) => {
   const uid = req.query.senderMail;
-  const jobs = await storage.getItem(uid);
+  const jobs = await client.db("emails").collection(uid).findOne();
   console.log(jobs);
-  if (jobs === undefined || jobs.currIndex === undefined) {
+  if (jobs === null || jobs.currIndex === null) {
     res.send({
       status: 200,
       jobsList: [],
@@ -146,7 +162,8 @@ app.get("/cancelJob", async (req, res) => {
   console.log(jobId);
   if (jobId != undefined) {
     await bree.stop(jobId);
-    await storage.setItem(senderMail, {});
+    await client.db("emails").collection(senderMail).drop();
+    // await storage.setItem(senderMail, {});
     res.send({ status: 200, message: "Cancelled Successfully" });
   } else {
     res.send({ status: 400, message: "error occured" });
@@ -155,5 +172,6 @@ app.get("/cancelJob", async (req, res) => {
 
 (async () => {
   await bree.start();
-  await storage.init();
+  await client.connect();
+  // await storage.init();
 })();

@@ -8,6 +8,15 @@ const nodeMailer = require("nodemailer");
 
 const storage = require("node-persist");
 
+const { MongoClient, ServerApiVersion } = require("mongodb");
+const uri =
+  "mongodb+srv://atharv_tare:TcRKC70mKHZ9d0ZX@clusterautomails.2au0kx5.mongodb.net/?retryWrites=true&w=majority";
+const client = new MongoClient(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  serverApi: ServerApiVersion.v1,
+});
+
 async function main() {
   const mailList = workerData.emailList;
   const senderId = workerData.senderId;
@@ -18,7 +27,8 @@ async function main() {
   const senderPass = workerData.senderPass;
   const jobId = workerData.jobId;
 
-  await storage.init();
+  await client.connect();
+  // await storage.init();
 
   let transporter = nodeMailer.createTransport({
     host: "smtp.gmail.com",
@@ -29,10 +39,10 @@ async function main() {
       pass: senderPass,
     },
   });
-  const obj = await storage.getItem(senderMail);
+  const obj = await client.db("emails").collection(senderMail).findOne({});
   // const obj = db.getSync(senderMail);
   console.log(obj);
-  if (obj === undefined || obj.currIndex === undefined) {
+  if (obj === null || obj.currIndex === null) {
     if (mailList.length > 90) {
       const currList = mailList.slice(0, 90);
       await sendMail({
@@ -42,12 +52,22 @@ async function main() {
         toEmails: toEmails,
         subject: subject,
       });
-      await storage.setItem(senderMail, {
+      await client.db("emails").collection(senderMail).insertOne({
         currIndex: "90",
         completedList: currList,
         totalList: mailList,
         jobId: jobId,
       });
+      await client
+        .db("emails")
+        .collection(senderMail)
+        .deleteOne({ _id: obj._id });
+      // await storage.setItem(senderMail, {
+      //   currIndex: "90",
+      //   completedList: currList,
+      //   totalList: mailList,
+      //   jobId: jobId,
+      // });
     } else {
       await sendMail({
         transporter: transporter,
@@ -56,12 +76,14 @@ async function main() {
         toEmails: toEmails,
         subject: subject,
       });
-      await storage.setItem(senderMail, {});
+      await client.db("emails").collection(senderMail).drop();
+      // await storage.setItem(senderMail, {});
       // db.saveSync(senderMail, {});
     }
   } else {
     if (parseInt(obj.currIndex) == mailList.length) {
-      await storage.setItem(senderMail, {});
+      await client.db("emails").collection(senderMail).drop();
+      // await storage.setItem(senderMail, {});
       // await db.save(senderMail, {});
       parentPort.postMessage("stop");
     } else {
@@ -78,15 +100,29 @@ async function main() {
       });
       const count = parseInt(obj.currIndex) + parseInt(currList.length);
       if (count == mailList.length) {
-        await storage.setItem(senderMail, {});
+        await client.db("emails").collection(senderMail).drop();
+        // await storage.setItem(senderMail, {});
         parentPort.postMessage("stop");
       } else {
-        await storage.setItem(senderMail, {
-          currIndex: count,
-          completedList: [...obj.completedList, ...currList],
-          totalList: mailList,
-          jobId: jobId,
-        });
+        await client
+          .db("emails")
+          .collection(senderMail)
+          .insertOne({
+            currIndex: count,
+            completedList: [...obj.completedList, ...currList],
+            totalList: mailList,
+            jobId: jobId,
+          });
+        await client
+          .db("emails")
+          .collection(senderMail)
+          .deleteOne({ _id: obj._id });
+        // await storage.setItem(senderMail, {
+        //   currIndex: count,
+        //   completedList: [...obj.completedList, ...currList],
+        //   totalList: mailList,
+        //   jobId: jobId,
+        // });
       }
     }
   }
