@@ -6,7 +6,7 @@ const nodeMailer = require("nodemailer");
 
 // const storage = db.collection("emails");
 
-const storage = require("node-persist");
+// const storage = require("node-persist");
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri =

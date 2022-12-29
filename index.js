@@ -10,7 +10,7 @@ const bodyparser = require("body-parser");
 const appDir = path.resolve(__dirname);
 
 const file_path = path.join(appDir + "/jobs", "schedule_emails.js");
-const storage = require("node-persist");
+// const storage = require("node-persist");
 
 const port = process.env.PORT || 65535;
 
