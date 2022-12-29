@@ -57,7 +57,7 @@ const scheduleMailFun = async ({
   await bree.add({
     name: jobId,
     path: file_path,
-    interval: `every ${timeStart}`,
+    interval: `at ${timeStart}`,
     worker: {
       workerData: {
         bodyHtml: bodyHtml,
