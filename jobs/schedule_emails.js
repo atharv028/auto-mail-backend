@@ -1,10 +1,12 @@
 const { workerData, parentPort } = require("worker_threads");
 const nodeMailer = require("nodemailer");
 
-const CyclicDb = require("@cyclic.sh/dynamodb");
-const db = CyclicDb("bored-dog-wrapCyclicDB");
+// const CyclicDb = require("@cyclic.sh/dynamodb");
+// const db = CyclicDb("bored-dog-wrapCyclicDB");
 
-const storage = db.collection("emails");
+// const storage = db.collection("emails");
+
+const storage = require("node-persist");
 
 async function main() {
   const mailList = workerData.emailList;
@@ -16,6 +18,8 @@ async function main() {
   const senderPass = workerData.senderPass;
   const jobId = workerData.jobId;
 
+  await storage.init();
+
   let transporter = nodeMailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,
@@ -25,9 +29,10 @@ async function main() {
       pass: senderPass,
     },
   });
-  const obj = await storage.get(senderMail);
+  const obj = await storage.getItem(senderMail);
+  // const obj = db.getSync(senderMail);
   console.log(obj);
-  if (obj === null || obj.props.currIndex === null) {
+  if (obj === undefined || obj.currIndex === undefined) {
     if (mailList.length > 90) {
       const currList = mailList.slice(0, 90);
       await sendMail({
@@ -37,7 +42,7 @@ async function main() {
         toEmails: toEmails,
         subject: subject,
       });
-      await storage.set(senderMail, {
+      await storage.setItem(senderMail, {
         currIndex: "90",
         completedList: currList,
         totalList: mailList,
@@ -51,16 +56,18 @@ async function main() {
         toEmails: toEmails,
         subject: subject,
       });
-      await storage.delete(senderMail);
+      await storage.setItem(senderMail, {});
+      // db.saveSync(senderMail, {});
     }
   } else {
-    if (parseInt(obj.props.currIndex) == mailList.length) {
-      await storage.set(senderMail, {});
+    if (parseInt(obj.currIndex) == mailList.length) {
+      await storage.setItem(senderMail, {});
+      // await db.save(senderMail, {});
       parentPort.postMessage("stop");
     } else {
       const currList = mailList.slice(
-        parseInt(obj.props.currIndex),
-        parseInt(obj.props.currIndex) + 90
+        parseInt(obj.currIndex),
+        parseInt(obj.currIndex) + 90
       );
       await sendMail({
         transporter: transporter,
@@ -69,14 +76,14 @@ async function main() {
         toEmails: toEmails,
         subject: subject,
       });
-      const count = parseInt(obj.props.currIndex) + parseInt(currList.length);
+      const count = parseInt(obj.currIndex) + parseInt(currList.length);
       if (count == mailList.length) {
-        await storage.delete(senderMail);
+        await storage.setItem(senderMail, {});
         parentPort.postMessage("stop");
       } else {
-        await storage.set(senderMail, {
+        await storage.setItem(senderMail, {
           currIndex: count,
-          completedList: [...obj.props.completedList, ...currList],
+          completedList: [...obj.completedList, ...currList],
           totalList: mailList,
           jobId: jobId,
         });

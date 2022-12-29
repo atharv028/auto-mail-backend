@@ -10,13 +10,14 @@ const bodyparser = require("body-parser");
 const appDir = path.resolve(__dirname);
 
 const file_path = path.join(appDir + "/jobs", "schedule_emails.js");
+const storage = require("node-persist");
 
 const port = process.env.PORT || 4000;
 
-const CyclicDb = require("@cyclic.sh/dynamodb");
-const db = CyclicDb("bored-dog-wrapCyclicDB");
+// const CyclicDb = require("@cyclic.sh/dynamodb");
+// const db = CyclicDb("bored-dog-wrapCyclicDB");
 
-const storage = db.collection("emails");
+// const storage = db.collection("emails");
 
 const handler = (msg) => {
   if (msg.message === "stop") {
@@ -70,7 +71,7 @@ const scheduleMailFun = async ({
       },
     },
   });
-  await storage.set(senderMail, {
+  await storage.setItem(senderMail, {
     jobId: jobId,
     currIndex: 0,
     completedList: [],
@@ -112,9 +113,9 @@ app.post("/scheduleEmail", async (req, res) => {
 
 app.get("/getJobs", async (req, res) => {
   const uid = req.query.senderMail;
-  const jobs = await storage.get(uid);
+  const jobs = await storage.getItem(uid);
   console.log(jobs);
-  if (jobs === null || jobs.props.currIndex === null) {
+  if (jobs === undefined || jobs.currIndex === undefined) {
     res.send({
       status: 200,
       jobsList: [],
@@ -123,15 +124,14 @@ app.get("/getJobs", async (req, res) => {
   } else {
     try {
       const remainingCount =
-        parseInt(jobs.props.totalList.length) -
-        parseInt(jobs.props.completedList.length);
+        parseInt(jobs.totalList.length) - parseInt(jobs.completedList.length);
       res.send({
         status: 200,
-        jobId: jobs.props.jobId,
-        completedMails: jobs.props.completedList,
-        totalList: jobs.props.totalList,
+        jobId: jobs.jobId,
+        completedMails: jobs.completedList,
+        totalList: jobs.totalList,
         message: `${remainingCount}/${parseInt(
-          jobs.props.totalList.length
+          jobs.totalList.length
         )} remaining for ${uid}`,
       });
     } catch (error) {
@@ -146,9 +146,14 @@ app.get("/cancelJob", async (req, res) => {
   console.log(jobId);
   if (jobId != undefined) {
     await bree.stop(jobId);
-    await storage.delete(senderMail);
+    await storage.setItem(senderMail, {});
     res.send({ status: 200, message: "Cancelled Successfully" });
   } else {
     res.send({ status: 400, message: "error occured" });
   }
 });
+
+(async () => {
+  await bree.start();
+  await storage.init();
+})();
