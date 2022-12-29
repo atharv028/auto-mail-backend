@@ -11,7 +11,7 @@
       "destination": "/"
     },
     {
-      "source": "/cancelJobs",
+      "source": "/cancelJob",
       "destination": "/"
     }
   ]
