@@ -9,7 +9,12 @@ const file_path = path.join(appDir + "/jobs", "schedule_emails.js");
 // var Store = require("jfs");
 // var db = new Store(__dirname + "/config.json", { pretty: true });
 
-const storage = require("node-persist");
+// const storage = require("node-persist");
+
+const CyclicDb = require("@cyclic.sh/dynamodb");
+const db = CyclicDb("bored-dog-wrapCyclicDB");
+
+const storage = db.collection("emails");
 
 const handler = (msg) => {
   let threadId = bree.getWorkerMetadata(msg.name).worker.threadId;
@@ -90,7 +95,7 @@ app.post("/scheduleEmail", (req, res) => {
         },
       });
     })().then(async () => {
-      await storage.setItem(senderMail, {
+      await storage.set(senderMail, {
         jobId: jobId,
         currIndex: 0,
         completedList: [],
@@ -115,26 +120,31 @@ app.post("/scheduleEmail", (req, res) => {
 
 app.get("/getJobs", async (req, res) => {
   const uid = req.query.senderMail;
-  const jobs = await storage.getItem(uid);
+  const jobs = await storage.get(uid);
   console.log(jobs);
-  if (jobs === undefined || jobs.currIndex === undefined) {
+  if (jobs === null || jobs.props.currIndex === null) {
     res.send({
       status: 200,
       jobsList: [],
       message: `No Jobs Scheduled for the mail ${uid}`,
     });
   } else {
-    const remainingCount =
-      parseInt(jobs.totalList.length) - parseInt(jobs.completedList.length);
-    res.send({
-      status: 200,
-      jobId: jobs.jobId,
-      completedMails: jobs.completedList,
-      totalList: jobs.totalList,
-      message: `${remainingCount}/${parseInt(
-        jobs.totalList.length
-      )} remaining for ${uid}`,
-    });
+    try {
+      const remainingCount =
+        parseInt(jobs.props.totalList.length) -
+        parseInt(jobs.props.completedList.length);
+      res.send({
+        status: 200,
+        jobId: jobs.props.jobId,
+        completedMails: jobs.props.completedList,
+        totalList: jobs.props.totalList,
+        message: `${remainingCount}/${parseInt(
+          jobs.props.totalList.length
+        )} remaining for ${uid}`,
+      });
+    } catch (error) {
+      console.log(error);
+    }
   }
 });
 
@@ -144,7 +154,7 @@ app.get("/cancelJob", async (req, res) => {
   console.log(jobId);
   if (jobId != undefined) {
     await bree.stop(jobId);
-    await storage.setItem(senderMail, {});
+    await storage.delete(senderMail);
     res.send({ status: 200, message: "Cancelled Successfully" });
   } else {
     res.send({ status: 400, message: "error occured" });
@@ -153,5 +163,5 @@ app.get("/cancelJob", async (req, res) => {
 
 (async () => {
   await bree.start();
-  await storage.init();
+  // await storage.init();
 })();

@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/util-base64": "^3.208.0",
+    "@cyclic.sh/dynamodb": "^0.0.33",
     "@ladjs/graceful": "^3.1.0",
     "body-parser": "^1.20.1",
     "bree": "^9.1.2",
