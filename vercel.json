@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "functions": "src/**/*.js",
   "builds": [{ "src": "index.js", "use": "@vercel/node" }],
   "rewrites": [
     {
@@ -8,11 +9,11 @@
     },
     {
       "source": "/getJobs",
-      "destination": "/getJobs"
+      "destination": "/"
     },
     {
       "source": "/cancelJobs",
-      "destination": "/cancelJobs"
+      "destination": "/"
     }
   ]
 }
