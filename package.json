@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/smithy-client": "^3.234.0",
     "@aws-sdk/util-base64": "^3.208.0",
     "@cyclic.sh/dynamodb": "^0.0.33",
     "body-parser": "^1.20.1",
