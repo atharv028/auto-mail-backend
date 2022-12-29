@@ -104,33 +104,6 @@ app.post("/scheduleEmail", async (req, res) => {
       senderMail: senderMail,
       senderPass: senderPass,
     });
-    // (async () => {
-    //   await bree.add({
-    //     name: jobId,
-    //     path: file_path,
-    //     interval: `every ${timeStart}`,
-    //     worker: {
-    //       workerData: {
-    //         bodyHtml: bodyHtml,
-    //         subject: subject,
-    //         emailList: emails,
-    //         toEmails: toEmails,
-    //         senderId: uid,
-    //         senderMail: senderMail,
-    //         senderPass: senderPass,
-    //         jobId: jobId,
-    //       },
-    //     },
-    //   });
-    // })().then(async () => {
-    //   await storage.set(senderMail, {
-    //     jobId: jobId,
-    //     currIndex: 0,
-    //     completedList: [],
-    //     totalList: emails,
-    //   });
-    //   await bree.start(jobId);
-    // });
     res.send({ status: 200, message: "Scheduled Successfully", jobId: jobId });
   } catch ({ err }) {
     res.send({ status: 400, message: "Error Occured" });
