@@ -12,22 +12,11 @@
   "dependencies": {
     "@aws-sdk/util-base64": "^3.208.0",
     "@cyclic.sh/dynamodb": "^0.0.33",
-    "@ladjs/graceful": "^3.1.0",
     "body-parser": "^1.20.1",
     "bree": "^9.1.2",
-    "cabin": "^10.0.4",
-    "dayjs": "^1.11.6",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "graceful": "^1.1.0",
-    "jfs": "^0.2.6",
-    "mongodb": "^4.12.0",
-    "nconf": "^0.12.0",
-    "node-persist": "^3.1.0",
-    "nodemailer": "^6.8.0",
-    "nosql": "^6.1.0",
-    "tingodb": "^0.6.1",
-    "typescript": "^4.9.3"
+    "nodemailer": "^6.8.0"
   },
   "devDependencies": {
     "@types/nodemailer": "^6.4.6"
