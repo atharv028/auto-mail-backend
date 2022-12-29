@@ -40,8 +40,8 @@ app.use(bodyparser.json());
 
 app.listen(port, () => console.log(`Listening to port ${port}`));
 
-app.get("/", (req, res) => {
-  bree.start();
+app.get("/", async (req, res) => {
+  await bree.start();
   res.send("Started");
 });
 
