@@ -179,8 +179,3 @@ app.get("/cancelJob", async (req, res) => {
     res.send({ status: 400, message: "error occured" });
   }
 });
-
-(async () => {
-  await bree.start();
-  // await storage.init();
-})();
