@@ -1,13 +1,4 @@
-const { workerData, parentPort } = require("worker_threads");
 const nodeMailer = require("nodemailer");
-
-// const CyclicDb = require("@cyclic.sh/dynamodb");
-// const db = CyclicDb("bored-dog-wrapCyclicDB");
-
-// const storage = db.collection("emails");
-
-// const storage = require("node-persist");
-
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const uri =
   "mongodb+srv://atharv_tare:TcRKC70mKHZ9d0ZX@clusterautomails.2au0kx5.mongodb.net/?retryWrites=true&w=majority";
@@ -17,15 +8,23 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
-async function main() {
-  const mailList = workerData.emailList;
-  const senderId = workerData.senderId;
-  const toEmails = workerData.toEmails;
-  const body = workerData.bodyHtml;
-  const subject = workerData.subject;
-  const senderMail = workerData.senderMail;
-  const senderPass = workerData.senderPass;
-  const jobId = workerData.jobId;
+async function processMail({
+  mailList,
+  toEmails,
+  body,
+  subject,
+  senderMail,
+  senderPass,
+  jobId,
+}) {
+  // const mailList = workerData.emailList;
+  // const senderId = workerData.senderId;
+  // const toEmails = workerData.toEmails;
+  // const body = workerData.bodyHtml;
+  // const subject = workerData.subject;
+  // const senderMail = workerData.senderMail;
+  // const senderPass = workerData.senderPass;
+  // const jobId = workerData.jobId;
 
   await client.connect();
   // await storage.init();
@@ -42,6 +41,7 @@ async function main() {
   const obj = await client.db("emails").collection(senderMail).findOne({});
   // const obj = db.getSync(senderMail);
   console.log(obj);
+  console.log("Schedule Emails called with id: " + jobId);
   if (obj === null || obj.currIndex === null) {
     if (mailList.length > 90) {
       const currList = mailList.slice(0, 90);
@@ -102,7 +102,7 @@ async function main() {
       if (count == mailList.length) {
         await client.db("emails").collection(senderMail).drop();
         // await storage.setItem(senderMail, {});
-        parentPort.postMessage("stop");
+        // parentPort.postMessage("stop");
       } else {
         await client
           .db("emails")
@@ -139,4 +139,6 @@ async function sendMail({ transporter, emails, text, subject, toEmails }) {
   });
 }
 
-main().catch((err) => console.log(err));
+// processMail().catch((err) => console.log(err));
+
+module.exports = processMail;
