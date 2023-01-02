@@ -126,7 +126,7 @@ async function processMail({
       }
     }
   }
-  process.exit(0);
+  // process.exit(0);
 }
 
 async function sendMail({ transporter, emails, text, subject, toEmails }) {

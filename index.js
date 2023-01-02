@@ -3,7 +3,6 @@ const app = express();
 
 const path = require("path");
 
-const Bree = require("bree");
 const Agenda = require("agenda");
 const { Job, JobAttributesData } = require("agenda");
 
@@ -30,21 +29,30 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
-const agenda = new Agenda({ db: { address: uri, collection: "agendaJobs" } });
-
-const handler = (msg) => {
-  if (msg.message === "stop") {
-    bree.stop(msg.name);
-  }
-};
-
-const bree = new Bree({
-  root: false,
-  jobs: [],
-  workerMessageHandler: handler,
+const agenda = new Agenda({
+  db: { address: uri, collection: "agendaJobs" },
+  lockLimit: 1,
+  maxConcurrency: 20,
+  defaultConcurrency: 10,
 });
 
+// const handler = (msg) => {
+//   if (msg.message === "stop") {
+//     bree.stop(msg.name);
+//   }
+// };
+
+// const bree = new Bree({
+//   root: false,
+//   jobs: [],
+//   workerMessageHandler: handler,
+// });
+
 const main = require("./jobs/schedule_emails.js");
+const { lockLimit } = require("agenda/dist/agenda/lock-limit.js");
+const {
+  defaultConcurrency,
+} = require("agenda/dist/agenda/default-concurrency.js");
 // import main from "./jobs/schedule_emails.js";
 
 var jobNum = 0;
@@ -70,7 +78,7 @@ const scheduleMailFun = async ({
   senderMail,
   senderPass,
 }) => {
-  agenda.define(jobId, async (job) => {
+  agenda.define(jobId, async (job, done) => {
     await main({
       mailList: emails,
       toEmails: toEmails,
@@ -80,6 +88,7 @@ const scheduleMailFun = async ({
       senderPass: senderPass,
       jobId: jobId,
     }).catch((err) => console.log(err));
+    done();
   });
   // await bree.add({
   //   name: jobId,
@@ -190,9 +199,22 @@ app.get("/cancelJob", async (req, res) => {
   }
 });
 
+const time = () => {
+  return new Date().toTimeString().split(" ")[0];
+};
+
 (async () => {
-  // await bree.start();
+  agenda.processEvery("1 minute");
   await client.connect();
   await agenda.start();
-  // await storage.init();
+
+  agenda.on("start", (job) => {
+    console.log(time(), `Job <${job.attrs.name}> starting`);
+  });
+  agenda.on("success", (job) => {
+    console.log(time(), `Job <${job.attrs.name}> succeeded`);
+  });
+  agenda.on("fail", (error, job) => {
+    console.log(time(), `Job <${job.attrs.name}> failed:`, error);
+  });
 })();
